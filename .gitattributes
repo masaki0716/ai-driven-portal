@@ -1,0 +1,5 @@
+# 改行コードはリポジトリ内で LF にそろえる（Windows で作業しても差分が出ないように）
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.jar binary
