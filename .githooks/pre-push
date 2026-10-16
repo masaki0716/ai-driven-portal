@@ -1,0 +1,16 @@
+#!/bin/sh
+# main への直接 push を拒否し、push 前に CI と同じ ./mvnw verify を回す
+
+while read local_ref local_sha remote_ref remote_sha; do
+  if [ "$remote_ref" = "refs/heads/main" ]; then
+    echo "pre-push: main への直接 push は禁止です。フィーチャーブランチから PR を作ってください" >&2
+    exit 1
+  fi
+done
+
+if ! ./mvnw -q -B verify; then
+  echo "pre-push: ./mvnw verify が失敗しました。直してから push してください" >&2
+  echo "（java のバージョンで失敗するときは、JAVA_HOME が JDK 21 を指しているか確かめてください）" >&2
+  exit 1
+fi
+exit 0

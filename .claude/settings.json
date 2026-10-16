@@ -1,0 +1,48 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./mvnw *)",
+      "PowerShell(.\\mvnw.cmd *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git switch *)",
+      "Bash(git push -u origin *)",
+      "Bash(gh pr create *)",
+      "Bash(gh pr view *)",
+      "Bash(gh pr checks *)"
+    ],
+    "ask": [
+      "Edit(/pom.xml)"
+    ],
+    "deny": [
+      "Edit(/.github/**)",
+      "Edit(/.githooks/**)",
+      "Edit(/.claude/settings.json)",
+      "Read(~/knowledgeBaseSystem/portal-acceptance-tests/**)",
+      "Edit(~/knowledgeBaseSystem/portal-acceptance-tests/**)",
+      "Bash(git config *core.hooksPath*)",
+      "PowerShell(git config *core.hooksPath*)",
+      "Bash(git push origin main)",
+      "Bash(git push origin main:*)",
+      "Bash(git push origin HEAD:main*)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push*--no-verify*)",
+      "Bash(git commit*--no-verify*)",
+      "Bash(git commit*-n *)",
+      "PowerShell(git push*--no-verify*)",
+      "PowerShell(git commit*--no-verify*)",
+      "Bash(gh pr merge*)",
+      "PowerShell(gh pr merge*)",
+      "Bash(gh repo delete*)",
+      "PowerShell(gh repo delete*)",
+      "Bash(*gh* api *merge*)",
+      "PowerShell(*gh* api *merge*)",
+      "Bash(*gh* api *protection*)",
+      "PowerShell(*gh* api *protection*)"
+    ]
+  }
+}

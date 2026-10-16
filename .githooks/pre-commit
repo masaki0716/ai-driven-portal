@@ -1,0 +1,38 @@
+#!/bin/sh
+# テストを弱める変更を commit 前に止める（T01-03）
+# 意図した変更なら、人間が内容を確かめてから git commit --no-verify で通す（AI には --no-verify を禁止している）
+
+TEST_DIR='src/test/'
+problems=''
+
+deleted=$(git diff --cached --name-only --diff-filter=D -- "$TEST_DIR")
+if [ -n "$deleted" ]; then
+  problems="$problems
+- テストファイルの削除:
+$(echo "$deleted" | sed 's/^/    /')"
+fi
+
+diff=$(git diff --cached -U0 -- "$TEST_DIR")
+
+disabled=$(echo "$diff" | grep -E '^\+[^+].*@(Disabled|Ignore)\b')
+if [ -n "$disabled" ]; then
+  problems="$problems
+- テストを無効にする注釈の追加:
+$(echo "$disabled" | sed 's/^/    /')"
+fi
+
+pattern='\b(assert[A-Za-z]*|verify|fail)\('
+removed=$(echo "$diff" | grep -E '^-[^-]' | grep -cE "$pattern")
+added=$(echo "$diff" | grep -E '^\+[^+]' | grep -cE "$pattern")
+if [ "$removed" -gt "$added" ]; then
+  problems="$problems
+- 検証（assert / verify / fail）の行が減っている: 削除 $removed 行・追加 $added 行"
+fi
+
+if [ -n "$problems" ]; then
+  echo "pre-commit: テストを弱める変更が含まれています$problems" >&2
+  echo "" >&2
+  echo "意図した変更なら、人間が確認してから git commit --no-verify で commit してください" >&2
+  exit 1
+fi
+exit 0
