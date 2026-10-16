@@ -1,5 +1,9 @@
 {
   "permissions": {
+    "blockReadsOutsideWorkingDirectories": true,
+    "additionalDirectories": [
+      "~/knowledgeBaseSystem/AI-Driven-Development/specs"
+    ],
     "allow": [
       "Bash(./mvnw *)",
       "PowerShell(.\\mvnw.cmd *)",
