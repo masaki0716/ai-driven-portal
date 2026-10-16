@@ -18,6 +18,16 @@ JDK 21 を入れて `JAVA_HOME` を設定したうえで:
 
 Windows の PowerShell では `.\mvnw.cmd test` のように実行する。
 
+## clone したら最初に1回
+git フックを有効にする（フックは `.githooks/` にあり、git の設定は clone ごとに必要）。
+
+```
+git config core.hooksPath .githooks
+```
+
+- pre-commit: テストを弱める変更（テストファイルの削除・`@Disabled` の追加・assert の減少）を止める
+- pre-push: main への直接 push を止め、CI と同じ `./mvnw verify` を回す
+
 ## 開発の進め方
 - 実装は Claude Code、受け入れテストは Antigravity が担当する。実装する AI は受け入れテストを見ない
 - 仕様（受け入れ条件）と意思決定記録（ADR）は別のリポジトリ（private）で管理している

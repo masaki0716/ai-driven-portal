@@ -13,6 +13,7 @@ AI 駆動開発の練習で作るポータルサイト。Claude Code はここ�
 - 受け入れ条件: `C:\Users\masas\knowledgeBaseSystem\AI-Driven-Development\specs\NN-機能名\受け入れ条件.md`
 - ADR: `C:\Users\masas\knowledgeBaseSystem\AI-Driven-Development\decisions\`
 - 実装を始める前に、該当機能の受け入れ条件を読む。曖昧な所は推測で埋めず質問する
+- このフォルダの外で読めるのは、仕様リポジトリの `specs/` だけ（`.claude/settings.json` の `blockReadsOutsideWorkingDirectories` でフォルダの外を止め、`specs/` だけをユーザー設定 `~/.claude/settings.json` の `additionalDirectories` で足している。リポジトリの設定で足したフォルダはこの制限の例外にならない仕様のため）。ADR は人間に内容を聞く
 - このリポジトリは public。仕様リポジトリの中身（特に案件の情報）をコード・コミット・PR に書き写さない
 
 ## 実装のルール
