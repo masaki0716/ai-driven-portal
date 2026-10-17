@@ -1,12 +1,12 @@
-# AGENTS.md — Claude Code と Antigravity の共通ルール
+# AGENTS.md — 実装担当とテスト担当の共通ルール
 
-このファイルは Antigravity が自動で読み、Claude Code も CLAUDE.md から取り込んで読む。
+このファイルは CLAUDE.md から取り込んで読む。実装もテストも Claude Code が担当し、セッションを分けて役割を分ける。
 
 ## 役割分担
-| | Claude Code | Antigravity |
+| | 実装担当（このリポジトリで起動した Claude Code） | テスト担当（`portal-acceptance-tests` で起動した Claude Code） |
 |---|---|---|
 | このリポジトリで | 実装・ユニットテスト・結合テスト・CI 設定 | 作業しない（受け入れテストは別のテスト専用リポジトリで書く） |
-| やらないこと | テスト専用リポジトリ（`portal-acceptance-tests`）を開く・シナリオと受け入れテストを読む | 実装コードを書く |
+| やらないこと | テスト専用リポジトリ（`portal-acceptance-tests`）を開く・シナリオと受け入れテストを読む・テスト担当のセッションとやり取りする | 実装コードを書く |
 
 ## 共通のルール
 - main には直接 push しない。ブランチで作業し、CI が通った PR を人間がマージする

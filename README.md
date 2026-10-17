@@ -29,6 +29,6 @@ git config core.hooksPath .githooks
 - pre-push: main への直接 push を止め、CI と同じ `./mvnw verify` を回す
 
 ## 開発の進め方
-- 実装は Claude Code、受け入れテストは Antigravity が担当する。実装する AI は受け入れテストを見ない
+- 実装と受け入れテストは、それぞれ別の Claude Code セッションが担当する。実装する AI は受け入れテストを見ない
 - 仕様（受け入れ条件）と意思決定記録（ADR）は別のリポジトリ（private）で管理している
 - main には直接 push しない。ブランチで作業し、CI が通った PR だけをマージする
