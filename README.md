@@ -12,11 +12,30 @@ AI 駆動開発の練習として作るポータルサイト。最初の機能�
 JDK 21 を入れて `JAVA_HOME` を設定したうえで:
 
 ```
-./mvnw test             # テスト
+./mvnw test             # テスト（Testcontainers を使うので Docker を起動しておく）
 ./mvnw spring-boot:run  # 起動（http://localhost:8080）
 ```
 
 Windows の PowerShell では `.\mvnw.cmd test` のように実行する。
+
+起動には天気の地点と PostgreSQL の接続先を環境変数で渡す（地点は設定ファイルに既定値が無く、無いと起動時に止まる）。
+
+```
+export PORTAL_WEATHER_LOCATION_NAME=東京
+export PORTAL_WEATHER_LOCATION_LATITUDE=35.6895
+export PORTAL_WEATHER_LOCATION_LONGITUDE=139.6917
+export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/portal
+export SPRING_DATASOURCE_USERNAME=...
+export SPRING_DATASOURCE_PASSWORD=...
+./mvnw spring-boot:run
+```
+
+| 環境変数 | 中身 |
+|---|---|
+| `PORTAL_WEATHER_LOCATION_NAME` / `_LATITUDE` / `_LONGITUDE` | 天気の地点（必須） |
+| `PORTAL_WEATHER_API_BASE_URL` | 天気 API の接続先（既定 `https://api.open-meteo.com`） |
+| `PORTAL_TEST_CLOCK_ENABLED` | `true` のときだけ `POST /api/test/clock`・`DELETE /api/test/weather-cache` が効く（受け入れテスト用。本番では指定しない） |
+| `SPRING_DATASOURCE_URL` / `_USERNAME` / `_PASSWORD` | PostgreSQL の接続先 |
 
 ## clone したら最初に1回
 git フックを有効にする（フックは `.githooks/` にあり、git の設定は clone ごとに必要）。

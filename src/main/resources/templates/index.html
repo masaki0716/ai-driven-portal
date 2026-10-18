@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ポータル</title>
+</head>
+<body>
+<main>
+	<h1>ポータル</h1>
+
+	<section class="weather">
+		<h2 th:text="|天気予報（${weather.locationName()}）|">天気予報（東京）</h2>
+
+		<p th:if="${weather.unavailable()}">天気を取得できませんでした。しばらくしてから、もう一度開いてください。</p>
+
+		<th:block th:unless="${weather.unavailable()}">
+			<p th:if="${weather.stale()}"
+				th:text="|最新の予報を取得できなかったため、古い予報（${weather.fetchedAt()} 時点）を表示しています。|"></p>
+			<p th:unless="${weather.stale()}" th:text="|取得時刻 ${weather.fetchedAt()}|"></p>
+
+			<table>
+				<thead>
+					<tr>
+						<th></th>
+						<th>日付</th>
+						<th>天気</th>
+						<th>最高気温</th>
+						<th>最低気温</th>
+						<th>降水確率</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr th:each="day : ${weather.days()}">
+						<th th:text="${day.label()}"></th>
+						<td th:text="${day.date()}"></td>
+						<td th:text="${day.weather()}"></td>
+						<td th:text="${day.temperatureMax()}"></td>
+						<td th:text="${day.temperatureMin()}"></td>
+						<td th:text="${day.precipitationProbability()}"></td>
+					</tr>
+				</tbody>
+			</table>
+		</th:block>
+
+		<p><a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a></p>
+	</section>
+</main>
+</body>
+</html>
