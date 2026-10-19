@@ -82,7 +82,8 @@ public class WeatherService {
 		}
 		catch (RuntimeException ex) {
 			log.error("weather api call failed: cause={}", describe(ex), ex);
-			repository.recordFailure(location, now);
+			// 5分の起点は、呼び出しを始めた時刻ではなく失敗を記録する時刻（受け入れ条件 6）
+			repository.recordFailure(location, clock.instant());
 			return Optional.empty();
 		}
 		repository.saveForecast(location, now, body);
