@@ -50,15 +50,15 @@ public class WeatherService {
 		LocalDate today = LocalDate.ofInstant(now, WeatherFormat.JST);
 		Optional<WeatherCacheRepository.CachedForecast> cached = repository.findForecast(location);
 
-		Optional<WeatherPanel> fresh = cached.filter(c -> isWithin(c.fetchedAt(), now, FRESH_FOR))
-			.flatMap(c -> toPanel(c, WeatherPanel.Status.FRESH, today));
+		// 新しい予報のうちは、日付をまたいでも呼び直さない（今日・明日だけ探し直す）
+		Optional<WeatherCacheRepository.CachedForecast> fresh = cached
+			.filter(c -> isWithin(c.fetchedAt(), now, FRESH_FOR));
 		if (fresh.isPresent()) {
-			return fresh.get();
+			return storedPanel(fresh.get(), WeatherPanel.Status.FRESH, today);
 		}
 
 		boolean recentlyFailed = repository.findLastFailure(location)
-			.filter(failedAt -> !now.isBefore(failedAt)
-					&& Duration.between(failedAt, now).compareTo(RETRY_AFTER_FAILURE) < 0)
+			.filter(failedAt -> isWithin(failedAt, now, RETRY_AFTER_FAILURE))
 			.isPresent();
 		if (!recentlyFailed) {
 			Optional<WeatherPanel> fetched = fetch(now, today);
@@ -68,7 +68,7 @@ public class WeatherService {
 		}
 
 		return cached.filter(c -> isWithin(c.fetchedAt(), now, STALE_FOR))
-			.flatMap(c -> toPanel(c, WeatherPanel.Status.STALE, today))
+			.map(c -> storedPanel(c, WeatherPanel.Status.STALE, today))
 			.orElseGet(() -> WeatherPanel.unavailable(location.name()));
 	}
 
@@ -78,30 +78,26 @@ public class WeatherService {
 		WeatherPanel panel;
 		try {
 			body = client.fetchForecast();
-			panel = WeatherPanel.of(WeatherPanel.Status.FRESH, location.name(), now, parser.parse(body), today);
+			panel = WeatherPanel.fetched(location.name(), now, parser.parse(body), today);
 		}
 		catch (RuntimeException ex) {
 			log.error("weather api call failed: cause={}", describe(ex), ex);
-			repository.recordFailure(location, now);
+			// 5分の起点は、呼び出しを始めた時刻ではなく失敗を記録する時刻（受け入れ条件 6）
+			repository.recordFailure(location, clock.instant());
 			return Optional.empty();
 		}
 		repository.saveForecast(location, now, body);
 		return Optional.of(panel);
 	}
 
-	private Optional<WeatherPanel> toPanel(WeatherCacheRepository.CachedForecast cached, WeatherPanel.Status status,
+	/** 保持している予報を出す。今日も明日も無ければ「取得できなかった」表示にする */
+	private WeatherPanel storedPanel(WeatherCacheRepository.CachedForecast cached, WeatherPanel.Status status,
 			LocalDate today) {
-		try {
-			return Optional.of(WeatherPanel.of(status, location.name(), cached.fetchedAt(),
-					parser.parse(cached.body()), today));
-		}
-		catch (UnexpectedWeatherResponseException ex) {
-			// 保持した時点では今日・明日がそろっていたが、日付が進んで足りなくなった
-			return Optional.empty();
-		}
+		return WeatherPanel.stored(status, location.name(), cached.fetchedAt(), parser.parse(cached.body()), today)
+			.orElseGet(() -> WeatherPanel.unavailable(location.name()));
 	}
 
-	/** from から now までが 0 以上 duration 以下か（時計を戻したときの未来の記録は使わない） */
+	/** from から now までが 0 以上 duration 以下か。ちょうど duration は含む（時計を戻したときの未来の記録は使わない） */
 	private static boolean isWithin(Instant from, Instant now, Duration duration) {
 		return !now.isBefore(from) && Duration.between(from, now).compareTo(duration) <= 0;
 	}
