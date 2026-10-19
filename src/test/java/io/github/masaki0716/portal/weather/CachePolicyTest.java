@@ -10,6 +10,15 @@ import io.github.masaki0716.portal.support.WeatherIntegrationTest;
 /** 受け入れ条件 4〜6（と 7 の古い予報の表示）。T0 = 2026-10-17 09:00 */
 class CachePolicyTest extends WeatherIntegrationTest {
 
+	/** 今日と明日の2日分だけの応答（日付が進むと明日が足りなくなる） */
+	private static final String TWO_DAYS = """
+			"time": ["2026-10-17", "2026-10-18"],
+			"weather_code": [1, 61],
+			"temperature_2m_max": [22.5, 18.4],
+			"temperature_2m_min": [14.4, -2.5],
+			"precipitation_probability_max": [10, 80]
+			""";
+
 	@Test
 	void 取得から30分以内は天気APIを呼び直さない() {
 		WeatherApiStub.respondWithDaily(WeatherApiStub.DEFAULT_DAILY);
@@ -60,6 +69,37 @@ class CachePolicyTest extends WeatherIntegrationTest {
 		// 時計が進んだので、今日は 2026-10-18
 		assertThat(text).contains("古い予報", "2026-10-17 09:00");
 		assertInOrder(text, "2026-10-18", "雨", "2026-10-19", "曇り");
+	}
+
+	@Test
+	void 取得からちょうど24時間の古い予報に明日が無ければ明日の欄をダッシュにする() {
+		WeatherApiStub.respondWithDaily(TWO_DAYS);
+		topPageText();
+
+		WeatherApiStub.respondWithStatus(500);
+		setClock("2026-10-18T09:00:00+09:00");
+		String text = topPageText();
+
+		assertThat(text).contains("古い予報", "2026-10-17 09:00").doesNotContain("天気を取得できませんでした");
+		assertInOrder(text,
+				"2026-10-18", "雨", "18℃", "-3℃", "80%",
+				"2026-10-19", "—", "—", "—", "—");
+	}
+
+	@Test
+	void 取得したあとに日付をまたいだら表示する時点の日付で探し直す() {
+		setClock("2026-10-17T23:50:00+09:00");
+		WeatherApiStub.respondWithDaily(TWO_DAYS);
+		topPageText();
+
+		WeatherApiStub.respondWithStatus(500);
+		setClock("2026-10-18T00:30:00+09:00");
+		String text = topPageText();
+
+		assertThat(text).contains("古い予報", "2026-10-17 23:50").doesNotContain("晴れ");
+		assertInOrder(text,
+				"2026-10-18", "雨", "18℃", "-3℃", "80%",
+				"2026-10-19", "—", "—", "—", "—");
 	}
 
 	@Test

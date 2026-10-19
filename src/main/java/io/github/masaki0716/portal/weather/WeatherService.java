@@ -51,7 +51,7 @@ public class WeatherService {
 		Optional<WeatherCacheRepository.CachedForecast> cached = repository.findForecast(location);
 
 		Optional<WeatherPanel> fresh = cached.filter(c -> isWithin(c.fetchedAt(), now, FRESH_FOR))
-			.flatMap(c -> toPanel(c, WeatherPanel.Status.FRESH, today));
+			.flatMap(c -> freshPanel(c, today));
 		if (fresh.isPresent()) {
 			return fresh.get();
 		}
@@ -67,7 +67,7 @@ public class WeatherService {
 		}
 
 		return cached.filter(c -> isWithin(c.fetchedAt(), now, STALE_FOR))
-			.flatMap(c -> toPanel(c, WeatherPanel.Status.STALE, today))
+			.flatMap(c -> WeatherPanel.stale(location.name(), c.fetchedAt(), parser.parse(c.body()), today))
 			.orElseGet(() -> WeatherPanel.unavailable(location.name()));
 	}
 
@@ -77,7 +77,7 @@ public class WeatherService {
 		WeatherPanel panel;
 		try {
 			body = client.fetchForecast();
-			panel = WeatherPanel.of(WeatherPanel.Status.FRESH, location.name(), now, parser.parse(body), today);
+			panel = WeatherPanel.fresh(location.name(), now, parser.parse(body), today);
 		}
 		catch (RuntimeException ex) {
 			log.error("weather api call failed: cause={}", describe(ex), ex);
@@ -88,14 +88,13 @@ public class WeatherService {
 		return Optional.of(panel);
 	}
 
-	private Optional<WeatherPanel> toPanel(WeatherCacheRepository.CachedForecast cached, WeatherPanel.Status status,
-			LocalDate today) {
+	/** 保持している新しい予報を出す。日付が進んで今日・明日がそろわなくなっていたら空（呼び直す） */
+	private Optional<WeatherPanel> freshPanel(WeatherCacheRepository.CachedForecast cached, LocalDate today) {
 		try {
-			return Optional.of(WeatherPanel.of(status, location.name(), cached.fetchedAt(),
-					parser.parse(cached.body()), today));
+			return Optional.of(WeatherPanel.fresh(location.name(), cached.fetchedAt(), parser.parse(cached.body()),
+					today));
 		}
 		catch (UnexpectedWeatherResponseException ex) {
-			// 保持した時点では今日・明日がそろっていたが、日付が進んで足りなくなった
 			return Optional.empty();
 		}
 	}
