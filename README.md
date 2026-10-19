@@ -37,6 +37,19 @@ export SPRING_DATASOURCE_PASSWORD=...
 | `PORTAL_TEST_CLOCK_ENABLED` | `true` のときだけ `POST /api/test/clock`・`DELETE /api/test/weather-cache` が効く（受け入れテスト用。本番では指定しない） |
 | `SPRING_DATASOURCE_URL` / `_USERNAME` / `_PASSWORD` | PostgreSQL の接続先 |
 
+### docker compose で動かす
+JDK と Docker があれば、PostgreSQL を用意しなくてもアプリと DB を一緒に起動できる。イメージはビルド済みの jar を入れるだけなので、先に jar を作る。
+
+```
+./mvnw package -DskipTests   # jar を作る
+docker compose up --build    # アプリと PostgreSQL を起動（http://localhost:8080）
+docker compose down          # 止める（DB の中身も消すときは -v を付ける）
+```
+
+- 地点の既定は東京。変えるときは `PORTAL_WEATHER_LOCATION_*` を環境変数で渡して `docker compose up` する
+- compose の DB のユーザー名・パスワードは手元専用の固定値
+- テスト用の口（`PORTAL_TEST_CLOCK_ENABLED`）は指定していない
+
 ## clone したら最初に1回
 git フックを有効にする（フックは `.githooks/` にあり、git の設定は clone ごとに必要）。
 

@@ -1,0 +1,39 @@
+# 手元でアプリと PostgreSQL を一緒に起動する（先に ./mvnw package -DskipTests で jar を作る）
+# DB のユーザー名・パスワードは手元専用の固定値。本番の接続先には使わない
+name: ai-driven-portal
+
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: portal
+      POSTGRES_USER: portal
+      POSTGRES_PASSWORD: portal
+    # ポートは公開しない（手元の既存の PostgreSQL とぶつからないように。アプリからは db:5432 で届く）
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U portal -d portal"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  app:
+    build: .
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/portal
+      SPRING_DATASOURCE_USERNAME: portal
+      SPRING_DATASOURCE_PASSWORD: portal
+      # 地点の既定は東京。変えるときは同じ名前の環境変数を渡して起動する
+      PORTAL_WEATHER_LOCATION_NAME: ${PORTAL_WEATHER_LOCATION_NAME:-東京}
+      PORTAL_WEATHER_LOCATION_LATITUDE: ${PORTAL_WEATHER_LOCATION_LATITUDE:-35.6895}
+      PORTAL_WEATHER_LOCATION_LONGITUDE: ${PORTAL_WEATHER_LOCATION_LONGITUDE:-139.6917}
+      # テスト用の口（PORTAL_TEST_CLOCK_ENABLED）は指定しない
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db-data:
