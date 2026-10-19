@@ -1,4 +1,4 @@
-# マージの関門。手元の pre-push フックと同じ ./mvnw verify を呼び、そのあと隠した受け入れテストを流す
+# マージの関門。手元の pre-push フックと同じ ./mvnw verify を呼び、隠した受け入れテストを流し、最後に疑似的な環境へデプロイする（ADR 0020）
 name: CI
 
 on:
@@ -46,6 +46,76 @@ jobs:
           token: ${{ secrets.ACCEPTANCE_TESTS_TOKEN }}
           path: acceptance
           persist-credentials: false
+      # 流すのは実装済みの機能だけ（ADR 0021）。機能の実装を終える PR で、ナレッジ側がここに番号を足す
       - name: 受け入れテスト
         working-directory: acceptance
-        run: bash ./mvnw -B test -Dapp.jar="$GITHUB_WORKSPACE/portal/target/ai-driven-portal-0.0.1-SNAPSHOT.jar"
+        env:
+          FEATURES: "01"
+        run: bash ./mvnw -B test -Dfeatures="$FEATURES" -Dapp.jar="$GITHUB_WORKSPACE/portal/target/ai-driven-portal-0.0.1-SNAPSHOT.jar"
+
+  # 本番は持たず、疑似的な環境へデプロイする（ADR 0020）。
+  # PR ではイメージを作って起動を確かめるだけ。main では GHCR に送り、確かめ終えたイメージに latest を付ける
+  deploy:
+    needs: acceptance
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    concurrency:
+      group: deploy-${{ github.ref }}
+    env:
+      IMAGE: ghcr.io/${{ github.repository }}
+      IS_MAIN: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: jar をビルドする
+        run: ./mvnw -B package -DskipTests
+      - name: イメージを作る
+        run: docker build -t "$IMAGE:$GITHUB_SHA" .
+      - name: GHCR にログインする
+        if: env.IS_MAIN == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: GHCR に送る
+        if: env.IS_MAIN == 'true'
+        run: docker push "$IMAGE:$GITHUB_SHA"
+      # 本番の代わりに、作ったイメージを PostgreSQL と一緒に起動する。天気 API は本物を呼ぶ
+      - name: 本番の代わりに起動する
+        run: |
+          docker network create portal
+          docker run -d --name db --network portal \
+            -e POSTGRES_DB=portal -e POSTGRES_USER=portal -e POSTGRES_PASSWORD=portal postgres:17
+          until docker exec db pg_isready -U portal -d portal; do sleep 1; done
+          docker run -d --name app --network portal -p 8080:8080 \
+            -e PORTAL_WEATHER_LOCATION_NAME=東京 \
+            -e PORTAL_WEATHER_LOCATION_LATITUDE=35.6895 \
+            -e PORTAL_WEATHER_LOCATION_LONGITUDE=139.6917 \
+            -e SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/portal \
+            -e SPRING_DATASOURCE_USERNAME=portal \
+            -e SPRING_DATASOURCE_PASSWORD=portal \
+            "$IMAGE:$GITHUB_SHA"
+      - name: 起動を確かめる
+        run: |
+          for i in $(seq 1 60); do
+            curl -fsS -o /dev/null http://localhost:8080/actuator/health && break
+            sleep 2
+          done
+          curl -fsS http://localhost:8080/actuator/health
+          echo
+          curl -fsS -o /dev/null -w 'GET / -> %{http_code}\n' http://localhost:8080/
+      - name: アプリのログ（失敗したときだけ）
+        if: failure()
+        run: docker logs app || true
+      - name: latest を付けて送る（デプロイ済みの印）
+        if: env.IS_MAIN == 'true'
+        run: |
+          docker tag "$IMAGE:$GITHUB_SHA" "$IMAGE:latest"
+          docker push "$IMAGE:latest"
