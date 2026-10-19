@@ -46,9 +46,12 @@ jobs:
           token: ${{ secrets.ACCEPTANCE_TESTS_TOKEN }}
           path: acceptance
           persist-credentials: false
+      # 流すのは実装済みの機能だけ（ADR 0021）。機能の実装を終える PR で、ナレッジ側がここに番号を足す
       - name: 受け入れテスト
         working-directory: acceptance
-        run: bash ./mvnw -B test -Dapp.jar="$GITHUB_WORKSPACE/portal/target/ai-driven-portal-0.0.1-SNAPSHOT.jar"
+        env:
+          FEATURES: "01"
+        run: bash ./mvnw -B test -Dfeatures="$FEATURES" -Dapp.jar="$GITHUB_WORKSPACE/portal/target/ai-driven-portal-0.0.1-SNAPSHOT.jar"
 
   # 本番は持たず、疑似的な環境へデプロイする（ADR 0020）。
   # PR ではイメージを作って起動を確かめるだけ。main では GHCR に送り、確かめ終えたイメージに latest を付ける
