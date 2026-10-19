@@ -72,6 +72,40 @@ class CachePolicyTest extends WeatherIntegrationTest {
 	}
 
 	@Test
+	void 失敗をくり返しても保持している予報と取得時刻は変えず24時間まで使い続ける() {
+		WeatherApiStub.respondWithDaily(WeatherApiStub.DEFAULT_DAILY);
+		topPageText();
+
+		WeatherApiStub.respondWithStatus(500);
+		setClock("2026-10-17T09:31:00+09:00");
+		topPageText();
+		setClock("2026-10-17T09:37:00+09:00");
+		topPageText();
+		setClock("2026-10-18T09:00:00+09:00");
+		String text = topPageText();
+
+		assertThat(WeatherApiStub.callCount()).isEqualTo(4);
+		assertThat(text).contains("古い予報", "2026-10-17 09:00").doesNotContain("天気を取得できませんでした");
+		assertInOrder(text, "2026-10-18", "雨", "2026-10-19", "曇り");
+	}
+
+	@Test
+	void 天気そのものが無い応答では保持している予報を上書きしない() {
+		WeatherApiStub.respondWithDaily(WeatherApiStub.DEFAULT_DAILY);
+		topPageText();
+
+		WeatherApiStub.respondWithDaily("""
+				"time": ["2026-10-17", "2026-10-18"],
+				"weather_code": [null, 3]
+				""");
+		setClock("2026-10-17T09:31:00+09:00");
+		String text = topPageText();
+
+		assertThat(text).contains("古い予報", "2026-10-17 09:00");
+		assertInOrder(text, "2026-10-17", "晴れ", "23℃", "2026-10-18", "雨");
+	}
+
+	@Test
 	void 取得からちょうど24時間の古い予報に明日が無ければ明日の欄をダッシュにする() {
 		WeatherApiStub.respondWithDaily(TWO_DAYS);
 		topPageText();
