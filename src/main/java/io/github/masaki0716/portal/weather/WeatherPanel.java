@@ -39,19 +39,20 @@ public record WeatherPanel(Status status, String locationName, String fetchedAt,
 
 	}
 
-	/** 新しい予報から作る。今日か明日の天気そのものが無ければ UnexpectedWeatherResponseException */
-	static WeatherPanel fresh(String locationName, Instant fetchedAt, Forecast forecast, LocalDate today) {
+	/** 取得したばかりの予報から作る。今日か明日の天気そのものが無ければ UnexpectedWeatherResponseException */
+	static WeatherPanel fetched(String locationName, Instant fetchedAt, Forecast forecast, LocalDate today) {
 		LocalDate tomorrow = today.plusDays(1);
 		List<Day> days = List.of(Day.of("今日", today, forecast.requireDay(today)),
 				Day.of("明日", tomorrow, forecast.requireDay(tomorrow)));
-		return new WeatherPanel(Status.FRESH, locationName, format(fetchedAt, WeatherFormat.TIME), days);
+		return new WeatherPanel(Status.FRESH, locationName, fetchedAtText(Status.FRESH, fetchedAt), days);
 	}
 
 	/**
-	 * 古い予報から作る。今日・明日は表示する時点の日付で探し直し、片方だけ無ければその日の欄を「—」にする。
-	 * 両方とも無ければ空（古い予報が無いときと同じ扱い）
+	 * 保持している予報（新しい予報・古い予報）から作る。今日・明日は表示する時点の日付で探し直し、
+	 * 片方だけ無ければその日の欄を「—」にする。両方とも無ければ空（取得できなかった扱い）
 	 */
-	static Optional<WeatherPanel> stale(String locationName, Instant fetchedAt, Forecast forecast, LocalDate today) {
+	static Optional<WeatherPanel> stored(Status status, String locationName, Instant fetchedAt, Forecast forecast,
+			LocalDate today) {
 		LocalDate tomorrow = today.plusDays(1);
 		DailyWeather todayWeather = forecast.days().get(today);
 		DailyWeather tomorrowWeather = forecast.days().get(tomorrow);
@@ -59,11 +60,13 @@ public record WeatherPanel(Status status, String locationName, String fetchedAt,
 			return Optional.empty();
 		}
 		List<Day> days = List.of(Day.of("今日", today, todayWeather), Day.of("明日", tomorrow, tomorrowWeather));
-		return Optional.of(new WeatherPanel(Status.STALE, locationName, format(fetchedAt, WeatherFormat.DATE_TIME), days));
+		return Optional.of(new WeatherPanel(status, locationName, fetchedAtText(status, fetchedAt), days));
 	}
 
-	private static String format(Instant instant, DateTimeFormatter formatter) {
-		return instant.atZone(WeatherFormat.JST).format(formatter);
+	/** 新しい予報は HH:mm、古い予報は最大24時間前なので日付も付ける */
+	private static String fetchedAtText(Status status, Instant fetchedAt) {
+		DateTimeFormatter formatter = (status == Status.STALE) ? WeatherFormat.DATE_TIME : WeatherFormat.TIME;
+		return fetchedAt.atZone(WeatherFormat.JST).format(formatter);
 	}
 
 	static WeatherPanel unavailable(String locationName) {

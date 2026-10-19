@@ -32,6 +32,22 @@ class CachePolicyTest extends WeatherIntegrationTest {
 	}
 
 	@Test
+	void 取得から30分以内に日付をまたいでも呼び直さず今日と明日を探し直す() {
+		setClock("2026-10-17T23:50:00+09:00");
+		WeatherApiStub.respondWithDaily(TWO_DAYS);
+		topPageText();
+
+		setClock("2026-10-18T00:10:00+09:00");
+		String text = topPageText();
+
+		assertThat(WeatherApiStub.callCount()).isEqualTo(1);
+		assertThat(text).contains("23:50").doesNotContain("古い予報", "天気を取得できませんでした", "晴れ");
+		assertInOrder(text,
+				"2026-10-18", "雨", "18℃", "-3℃", "80%",
+				"2026-10-19", "—", "—", "—", "—");
+	}
+
+	@Test
 	void 取得から30分を過ぎたら呼び直す() {
 		WeatherApiStub.respondWithDaily(WeatherApiStub.DEFAULT_DAILY);
 		topPageText();
