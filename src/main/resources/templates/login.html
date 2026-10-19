@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ログイン - ポータル</title>
+</head>
+<body>
+<main>
+	<h1>ログイン</h1>
+
+	<ul th:unless="${errors.isEmpty()}">
+		<li th:each="message : ${errors}" th:text="${message}"></li>
+	</ul>
+
+	<form th:action="@{/login}" method="post">
+		<p><label>メールアドレス <input type="text" name="email" autocomplete="username"></label></p>
+		<p><label>パスワード <input type="password" name="password" autocomplete="current-password"></label></p>
+		<p><button type="submit">ログインする</button></p>
+	</form>
+
+	<p><a th:href="@{/signup}">会員登録</a> / <a th:href="@{/}">トップへ</a></p>
+</main>
+</body>
+</html>

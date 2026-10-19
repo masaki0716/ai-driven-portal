@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ユーザー名の変更 - ポータル</title>
+</head>
+<body>
+<header th:replace="~{fragments/header :: header}"></header>
+<main>
+	<h1>ユーザー名の変更</h1>
+
+	<ul th:unless="${errors.isEmpty()}">
+		<li th:each="message : ${errors}" th:text="${message}"></li>
+	</ul>
+
+	<form th:action="@{/users/{id}/username(id=${memberId})}" method="post">
+		<p><label>新しいユーザー名（20文字まで） <input type="text" name="username" th:value="${username}"></label></p>
+		<p><button type="submit">変更する</button></p>
+	</form>
+
+	<p><a th:href="@{/}">トップへ</a></p>
+</main>
+</body>
+</html>

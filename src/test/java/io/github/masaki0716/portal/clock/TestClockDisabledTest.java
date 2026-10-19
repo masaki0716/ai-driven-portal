@@ -7,7 +7,7 @@ import org.springframework.test.context.TestPropertySource;
 
 import io.github.masaki0716.portal.support.PortalIntegrationTest;
 
-/** 受け入れ条件 14: 本番の設定では口が効かない */
+/** 天気予報の受け入れ条件 14・認証の 17・19: 本番の設定では口が効かない（ログインしていなくても /login へ移動させない） */
 @TestPropertySource(properties = "portal.test-clock.enabled=false")
 class TestClockDisabledTest extends PortalIntegrationTest {
 
@@ -25,6 +25,16 @@ class TestClockDisabledTest extends PortalIntegrationTest {
 	@Test
 	void 保持を消す口は404を返す() {
 		assertThat(delete("/api/test/weather-cache").statusCode()).isEqualTo(404);
+	}
+
+	@Test
+	void 失敗の記録を消す口は404を返す() {
+		assertThat(delete("/api/test/login-attempts").statusCode()).isEqualTo(404);
+	}
+
+	@Test
+	void 存在しない口も404を返す() {
+		assertThat(get("/api/test/no-such").statusCode()).isEqualTo(404);
 	}
 
 }
