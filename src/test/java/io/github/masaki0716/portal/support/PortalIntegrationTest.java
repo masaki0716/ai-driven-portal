@@ -27,8 +27,12 @@ import org.springframework.test.context.TestPropertySource;
 		"portal.weather.location.name=東京",
 		"portal.weather.location.latitude=35.6895",
 		"portal.weather.location.longitude=139.6917",
+		"portal.auth.invite-code=" + PortalIntegrationTest.INVITE_CODE,
 		"portal.test-clock.enabled=true" })
 public abstract class PortalIntegrationTest {
+
+	/** テストで使う招待コード */
+	public static final String INVITE_CODE = "test-invite-code";
 
 	private static final HttpClient HTTP = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build();
 
@@ -43,6 +47,11 @@ public abstract class PortalIntegrationTest {
 	@BeforeEach
 	void resetWeatherApi() {
 		WeatherApiStub.reset();
+	}
+
+	/** クッキーを持つ、新しいブラウザ（別の相手のつもりで使う） */
+	protected Browser newBrowser() {
+		return new Browser("http://localhost:" + port);
 	}
 
 	protected HttpResponse<String> get(String path) {

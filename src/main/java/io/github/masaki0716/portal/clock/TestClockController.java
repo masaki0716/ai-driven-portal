@@ -11,13 +11,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.github.masaki0716.portal.auth.LoginAttemptRepository;
 import io.github.masaki0716.portal.weather.WeatherCacheRepository;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * 受け入れ条件 14 の口。テスト用の設定でないときは 404 を返す。
+ * 天気予報の受け入れ条件 14・認証の 17 の口。テスト用の設定でないときは 404 を返す。
  * コントローラ自体は常に登録し、無効かどうかを先に見る（本文の形式より 404 を優先するため、本文は文字列で受けて自分で読む）。
  */
 @RestController
@@ -30,13 +31,17 @@ public class TestClockController {
 
 	private final WeatherCacheRepository weatherCacheRepository;
 
+	private final LoginAttemptRepository loginAttemptRepository;
+
 	private final JsonMapper jsonMapper;
 
 	public TestClockController(TestClockProperties properties, Clock clock,
-			WeatherCacheRepository weatherCacheRepository, JsonMapper jsonMapper) {
+			WeatherCacheRepository weatherCacheRepository, LoginAttemptRepository loginAttemptRepository,
+			JsonMapper jsonMapper) {
 		this.properties = properties;
 		this.clock = clock;
 		this.weatherCacheRepository = weatherCacheRepository;
+		this.loginAttemptRepository = loginAttemptRepository;
 		this.jsonMapper = jsonMapper;
 	}
 
@@ -59,6 +64,16 @@ public class TestClockController {
 			return ResponseEntity.notFound().build();
 		}
 		weatherCacheRepository.deleteAll();
+		return ResponseEntity.noContent().build();
+	}
+
+	/** すべての相手の失敗の記録（回数とロック）を消す */
+	@DeleteMapping("/login-attempts")
+	ResponseEntity<Void> clearLoginAttempts() {
+		if (!properties.enabled()) {
+			return ResponseEntity.notFound().build();
+		}
+		loginAttemptRepository.deleteAll();
 		return ResponseEntity.noContent().build();
 	}
 

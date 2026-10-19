@@ -18,12 +18,13 @@ JDK 21 を入れて `JAVA_HOME` を設定したうえで:
 
 Windows の PowerShell では `.\mvnw.cmd test` のように実行する。
 
-起動には天気の地点と PostgreSQL の接続先を環境変数で渡す（地点は設定ファイルに既定値が無く、無いと起動時に止まる）。
+起動には天気の地点・招待コード・PostgreSQL の接続先を環境変数で渡す（地点と招待コードは設定ファイルに既定値が無く、無いと起動時に止まる）。
 
 ```
 export PORTAL_WEATHER_LOCATION_NAME=東京
 export PORTAL_WEATHER_LOCATION_LATITUDE=35.6895
 export PORTAL_WEATHER_LOCATION_LONGITUDE=139.6917
+export PORTAL_AUTH_INVITE_CODE=...
 export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/portal
 export SPRING_DATASOURCE_USERNAME=...
 export SPRING_DATASOURCE_PASSWORD=...
@@ -34,7 +35,8 @@ export SPRING_DATASOURCE_PASSWORD=...
 |---|---|
 | `PORTAL_WEATHER_LOCATION_NAME` / `_LATITUDE` / `_LONGITUDE` | 天気の地点（必須） |
 | `PORTAL_WEATHER_API_BASE_URL` | 天気 API の接続先（既定 `https://api.open-meteo.com`） |
-| `PORTAL_TEST_CLOCK_ENABLED` | `true` のときだけ `POST /api/test/clock`・`DELETE /api/test/weather-cache` が効く（受け入れテスト用。本番では指定しない） |
+| `PORTAL_AUTH_INVITE_CODE` | 会員登録の招待コード（必須。空白だけも不可）。リポジトリには書かない |
+| `PORTAL_TEST_CLOCK_ENABLED` | `true` のときだけ `POST /api/test/clock`・`DELETE /api/test/weather-cache`・`DELETE /api/test/login-attempts` が効く（受け入れテスト用。本番では指定しない） |
 | `SPRING_DATASOURCE_URL` / `_USERNAME` / `_PASSWORD` | PostgreSQL の接続先 |
 
 ### docker compose で動かす
@@ -47,7 +49,7 @@ docker compose down          # 止める（DB の中身も消すときは -v を
 ```
 
 - 地点の既定は東京。変えるときは `PORTAL_WEATHER_LOCATION_*` を環境変数で渡して `docker compose up` する
-- compose の DB のユーザー名・パスワードは手元専用の固定値
+- compose の DB のユーザー名・パスワードと招待コード（`local-invite-code`）は手元専用の固定値
 - テスト用の口（`PORTAL_TEST_CLOCK_ENABLED`）は指定していない
 
 ## clone したら最初に1回
