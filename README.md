@@ -49,7 +49,7 @@ docker compose down          # 止める（DB の中身も消すときは -v を
 ```
 
 - 地点の既定は東京。変えるときは `PORTAL_WEATHER_LOCATION_*` を環境変数で渡して `docker compose up` する
-- compose の DB のユーザー名・パスワードは手元専用の固定値
+- compose の DB のユーザー名・パスワードと招待コード（`local-invite-code`）は手元専用の固定値
 - テスト用の口（`PORTAL_TEST_CLOCK_ENABLED`）は指定していない
 
 ## clone したら最初に1回
