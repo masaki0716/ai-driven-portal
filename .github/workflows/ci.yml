@@ -50,7 +50,7 @@ jobs:
       - name: 受け入れテスト
         working-directory: acceptance
         env:
-          FEATURES: "01"
+          FEATURES: "01,02"
         run: bash ./mvnw -B test -Dfeatures="$FEATURES" -Dapp.jar="$GITHUB_WORKSPACE/portal/target/ai-driven-portal-0.0.1-SNAPSHOT.jar"
 
   # 本番は持たず、疑似的な環境へデプロイする（ADR 0020）。
@@ -94,13 +94,16 @@ jobs:
           docker run -d --name db --network portal \
             -e POSTGRES_DB=portal -e POSTGRES_USER=portal -e POSTGRES_PASSWORD=portal postgres:17
           until docker exec db pg_isready -U portal -d portal; do sleep 1; done
+          # 招待コードはリポジトリにもシークレットにも置かず、毎回ランダムに作る（T02-02）
+          INVITE_CODE=$(openssl rand -hex 16)
+          echo "::add-mask::$INVITE_CODE"
           docker run -d --name app --network portal -p 8080:8080 \
             -e PORTAL_WEATHER_LOCATION_NAME=東京 \
             -e PORTAL_WEATHER_LOCATION_LATITUDE=35.6895 \
             -e PORTAL_WEATHER_LOCATION_LONGITUDE=139.6917 \
             -e SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/portal \
             -e SPRING_DATASOURCE_USERNAME=portal \
-            -e SPRING_DATASOURCE_PASSWORD=portal \
+            -e SPRING_DATASOURCE_PASSWORD=portal             -e PORTAL_AUTH_INVITE_CODE="$INVITE_CODE" \
             "$IMAGE:$GITHUB_SHA"
       - name: 起動を確かめる
         run: |
