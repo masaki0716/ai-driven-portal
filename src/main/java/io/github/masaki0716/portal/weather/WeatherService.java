@@ -57,8 +57,7 @@ public class WeatherService {
 		}
 
 		boolean recentlyFailed = repository.findLastFailure(location)
-			.filter(failedAt -> !now.isBefore(failedAt)
-					&& Duration.between(failedAt, now).compareTo(RETRY_AFTER_FAILURE) < 0)
+			.filter(failedAt -> isWithin(failedAt, now, RETRY_AFTER_FAILURE))
 			.isPresent();
 		if (!recentlyFailed) {
 			Optional<WeatherPanel> fetched = fetch(now, today);
@@ -101,7 +100,7 @@ public class WeatherService {
 		}
 	}
 
-	/** from から now までが 0 以上 duration 以下か（時計を戻したときの未来の記録は使わない） */
+	/** from から now までが 0 以上 duration 以下か。ちょうど duration は含む（時計を戻したときの未来の記録は使わない） */
 	private static boolean isWithin(Instant from, Instant now, Duration duration) {
 		return !now.isBefore(from) && Duration.between(from, now).compareTo(duration) <= 0;
 	}

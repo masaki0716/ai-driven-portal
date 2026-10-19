@@ -89,12 +89,25 @@ class CachePolicyTest extends WeatherIntegrationTest {
 	}
 
 	@Test
-	void 失敗から5分たったら呼び直す() {
+	void 失敗からちょうど5分はまだ天気APIを呼び直さない() {
 		WeatherApiStub.respondWithStatus(500);
 		topPageText();
 
 		WeatherApiStub.respondWithDaily(WeatherApiStub.DEFAULT_DAILY);
 		setClock("2026-10-17T09:05:00+09:00");
+		String text = topPageText();
+
+		assertThat(WeatherApiStub.callCount()).isEqualTo(1);
+		assertThat(text).contains("天気を取得できませんでした");
+	}
+
+	@Test
+	void 失敗から5分を超えたら呼び直す() {
+		WeatherApiStub.respondWithStatus(500);
+		topPageText();
+
+		WeatherApiStub.respondWithDaily(WeatherApiStub.DEFAULT_DAILY);
+		setClock("2026-10-17T09:05:01+09:00");
 		String text = topPageText();
 
 		assertThat(WeatherApiStub.callCount()).isEqualTo(2);
