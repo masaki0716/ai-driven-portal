@@ -1,4 +1,4 @@
-# マージの関門。手元の pre-push フックと同じ ./mvnw verify を呼ぶ
+# マージの関門。手元の pre-push フックと同じ ./mvnw verify を呼び、そのあと隠した受け入れテストを流す
 name: CI
 
 on:
@@ -22,3 +22,30 @@ jobs:
           cache: maven
       - name: ./mvnw verify
         run: ./mvnw -B verify
+
+  # 受け入れテストは private の portal-acceptance-tests にある（ADR 0007）。
+  # このリポジトリは public なので、ログに出るのはシナリオ ID と合否だけにし、失敗の中身はアーティファクトにしない
+  acceptance:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: portal
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      # テストを checkout する前に jar を作る（ビルド中に動くコードからテストが見えないように）
+      - name: jar をビルドする
+        working-directory: portal
+        run: ./mvnw -B package -DskipTests
+      - uses: actions/checkout@v4
+        with:
+          repository: masaki0716/portal-acceptance-tests
+          token: ${{ secrets.ACCEPTANCE_TESTS_TOKEN }}
+          path: acceptance
+          persist-credentials: false
+      - name: 受け入れテスト
+        working-directory: acceptance
+        run: bash ./mvnw -B test -Dapp.jar="$GITHUB_WORKSPACE/portal/target/ai-driven-portal-0.0.1-SNAPSHOT.jar"
